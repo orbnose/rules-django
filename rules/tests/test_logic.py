@@ -1,7 +1,7 @@
-from unittest import TestCase
+from django.test import TestCase
 
-from .logic import get_jsonlogic, has_valid_tokens, has_valid_left_parens, has_valid_right_parens, has_balanced_parens
-from .logic import has_valid_and_or, has_valid_not, has_valid_number_args, is_valid_logic_string
+from ..logic import get_jsonlogic, has_valid_tokens, has_valid_left_parens, has_valid_right_parens, has_balanced_parens
+from ..logic import has_valid_and_or, has_valid_not, has_valid_number_args, is_valid_logic_string
 
 class TestGetJSONLogicDict(TestCase):
 
