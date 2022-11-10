@@ -84,9 +84,11 @@ def get_jsonlogic(logic_string:str):
         logic_list[-1][operator] = pop_stack_iter(stack, logic_list[-1][operator], get_operand_target(operator), 0)
     if logic_list:
         return logic_list[0]
+
     return {} # Fallback empty value
 
-# --- Regular expression functions for checking validity of the logic string before jsonlogic processing begins
+# --- --- --- --- Regular expression functions for checking validity of the logic string before jsonlogic processing begins --- --- --- ---
+
 def has_valid_tokens(logic_string: str):
 
     # valid tokens are 'AND', 'OR', 'NOT', '(', ')', [any group of one or more digits], [any group of zero or more spaces] 
