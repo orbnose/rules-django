@@ -61,8 +61,8 @@ class Rule(models.Model):
 
     name = models.CharField(max_length = 200)
     logic_string = models.CharField(max_length = 200)
-    jsonlogic_symbols = models.JSONField()
-    jsonlogic_conditions = models.JSONField()
+    jsonlogic_symbols = models.JSONField(blank=True)
+    jsonlogic_conditions = models.JSONField(blank=True)
     num_conditions = models.PositiveIntegerField()
 
     def replace_jsonlogic_symbols_iter(self, jsonlogic):
