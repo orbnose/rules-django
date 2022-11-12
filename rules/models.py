@@ -2,6 +2,8 @@ import copy, re
 
 from django.db import models
 
+from .logic import get_jsonlogic
+
 '''
 Setup: One context_type per variable available to the rules. 
 Property and Operator and Action dictionaries will be laid out like so:
@@ -61,34 +63,38 @@ class Rule(models.Model):
 
     def set_jsonlogic_conditions(self):
 
-        for condition in self.condition_set:
+        self.set_jsonlogic_only_boolean_symbols()
+
+        for condition in self.condition_set.all():
             condition.set_jsonlogic_condition_and_save()
         
         self.jsonlogic_full_conditions = self.replace_jsonlogic_symbols_recur( copy.deepcopy(self.jsonlogic_only_boolean_symbols) )
+
+    def set_jsonlogic_only_boolean_symbols(self):
+        self.jsonlogic_only_boolean_symbols = get_jsonlogic(self.logic_string)
 
     def replace_jsonlogic_symbols_recur(self, jsonlogic):
 
         if type(jsonlogic) == dict:
             # There should only be 1 key per logic string dictionary (one of 'AND', 'OR', 'NOT').
-            key = jsonlogic.keys()[0]
-            value = jsonlogic.values()[0]
+            key = list(jsonlogic.keys())[0]
+            value = list(jsonlogic.values())[0]
 
-            # Convert 'AND' 'OR' 'NOT'
             if key == 'NOT':
                 key = '!'
             else:
                 key = key.lower()
             
-            # Iterate
-            jsonlogic = {}
-            jsonlogic[key] = self.replace_jsonlogic_symbols_recur(value)
+            # replace/iterate
+            jsonlogic = { key : self.replace_jsonlogic_symbols_recur(value) }
 
         elif type(jsonlogic) == list:
             for index, symbol in enumerate(jsonlogic):
-                condition_number_match = re.search(r"^@(\d)+$", symbol)
+                condition_number_match = re.match(r"^@(\d)+$", symbol)
                 if not condition_number_match:
                     raise ValueError(symbol,' in ',jsonlogic,': improper condition argument')
-                num = condition_number_match(0)
+                # match.group(1) has the first sub-group, in this case the digit extraction
+                num = condition_number_match.group(1)
                 jsonlogic[index] = self.condition_set.get(rule_index=num).jsonlogic_condition
 
         return jsonlogic
@@ -131,13 +137,14 @@ class Condition(models.Model):
     operator = models.ForeignKey(to=BoolOperator, on_delete=models.CASCADE)
     jsonlogic_condition = models.JSONField()
 
-    def set_jsonlogic_condition(self):
+    def set_jsonlogic_condition_and_save(self):
         if not self.operand_object or not self.operand_object or not self.operator:
             return ValueError('missing condition components')
 
         self.jsonlogic_condition = (
             { self.operator.jsonlogic_operator : [self.get_subject_json(), self.get_object_json()] }
         )
+        self.save()
 
     def get_subject_json(self):
         return self.get_freetext_or_property_json(self.freetext_subject, self.operand_subject.function_name)
