@@ -43,13 +43,10 @@ function_dict = {
 '''
 TODO:
 Create function/script to create new Property/BoolOperator objects and tie a command into the available Django manage.py commands.
-Write function to convert symbolic jsonlogic string into one with complete conditions
 Build the GUI
 '''
 
-class RuleActionPair(models.Model):
 
-    jsonlogic_if_statement = models.JSONField()
 
 class Rule(models.Model):
 
@@ -58,7 +55,6 @@ class Rule(models.Model):
     jsonlogic_only_boolean_symbols = models.JSONField(blank=True)
     jsonlogic_full_conditions = models.JSONField(blank=True)
     num_conditions = models.PositiveIntegerField()
-    rule_action_pair = models.ForeignKey(to=RuleActionPair, on_delete=models.CASCADE)
 
     def set_jsonlogic_conditions(self):
 
@@ -107,7 +103,26 @@ class Rule(models.Model):
 class Action(models.Model):
     function_name = models.CharField(max_length = 200)
     context_type = models.CharField(max_length = 200)
-    rule_action_pair = models.ForeignKey(to=RuleActionPair, on_delete=models.CASCADE)
+
+class RuleActionPair(models.Model):
+
+    jsonlogic_if_statement = models.JSONField()
+    rule = models.ForeignKey(to=Rule, on_delete=models.CASCADE)
+    action = models.ForeignKey(to=Action, on_delete=models.CASCADE)
+
+    def set_jsonlogic_if_statement(self):
+        self.rule.set_jsonlogic_conditions()
+        
+        self.jsonlogic_if_statement = { 
+            "if" : [
+                self.rule.jsonlogic_full_conditions,
+                self.action.function_name, 
+                self.get_do_nothing_function_name(),
+            ]
+        }
+
+    def get_do_nothing_function_name(self):
+        return "do_nothing"
 
 class Property(models.Model):
     function_name = models.CharField(max_length = 200)

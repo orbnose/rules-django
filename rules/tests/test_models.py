@@ -97,43 +97,72 @@ class TestRule(TestCase):
             ]}
         )
 
-def set_up_floating_conditions():
-    set_up_number_condition(rule_index=1, rule=get_shell_rule_with_shell_action_pair() )
-    set_up_freetext_condition(rule_index=1, rule=get_shell_rule_with_shell_action_pair() )
+class TestRuleActionPair(TestCase):
+    
+    def setUp(self):
+        set_up_properties_and_ops()
+        set_up_actions()
+        set_up_rule_with_2_conditions("test_rule", "1 AND 2")
 
-def get_shell_rule_with_shell_action_pair():
+    def test_set_jsonlogic_if_statement(self):
+        rap = set_up_and_get_rule_action_pair(
+            rule = Rule.objects.get(name="test_rule"),
+            action = Action.objects.get(function_name="buy_fork")
+        )
+        rap.set_jsonlogic_if_statement()
+        self.assertEqual(
+            rap.jsonlogic_if_statement,
+            { "if" : [
+                { "and" : [
+                    { "==" : [
+                        {"var" : "spoon_type"},
+                        "Big"
+                    ]},
+                    { ">" : [
+                        {"var" : "number_of_spoons"},
+                        {"var" : "number_of_forks"}
+                    ]}
+                ]},
+                "buy_fork",
+                "do_nothing"
+            ]}
+        )
+
+def set_up_and_get_rule_action_pair(rule, action):
     rap = RuleActionPair(
         jsonlogic_if_statement = {},
+        rule = rule,
+        action = action,
     )
-    rap.save()
+    return rap
+
+def set_up_floating_conditions():
+    set_up_number_condition(rule_index=1, rule=get_shell_rule() )
+    set_up_freetext_condition(rule_index=1, rule=get_shell_rule() )
+
+def get_shell_rule():
     shell_rule = Rule(
         name = "shell",
         logic_string = "",
         jsonlogic_only_boolean_symbols = {},
         jsonlogic_full_conditions = {},
         num_conditions = 1,
-        rule_action_pair = rap,
     )
     shell_rule.save()
     return shell_rule
 
 def set_up_rule_with_2_conditions(name, rule_logic_string):
-    rule = get_2_condition_rule_with_shell_action_pair(name, rule_logic_string)
+    rule = get_2_condition_rule(name, rule_logic_string)
     _ = set_up_number_condition(rule_index=1, rule=rule)
     _ = set_up_freetext_condition(rule_index=2, rule=rule)
 
-def get_2_condition_rule_with_shell_action_pair(name, rule_logic_string: str):
-    rap = RuleActionPair(
-        jsonlogic_if_statement = {},
-    )
-    rap.save()
+def get_2_condition_rule(name, rule_logic_string: str):
     rule = Rule(
         name = name,
         logic_string = rule_logic_string,
         jsonlogic_only_boolean_symbols = {},
         jsonlogic_full_conditions = {},
         num_conditions = 2,
-        rule_action_pair = rap,
     )
     rule.save()
     return rule
@@ -162,6 +191,18 @@ def set_up_freetext_condition(rule_index, rule: Rule):
         )
     cond.save()
     return cond
+
+def set_up_actions():
+    _ = Action(
+        function_name = "buy_fork",
+        context_type = "fork",
+    )
+    _.save()
+    _ = Action(
+        function_name = "eat_ice_cream_with_spoon",
+        context_type = "spoon",
+    )
+    _.save()
 
 def set_up_properties_and_ops():
     _ = Property(
