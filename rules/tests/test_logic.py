@@ -58,6 +58,10 @@ class TestGetJSONLogicDict(TestCase):
       }
       self.assertEqual(get_jsonlogic(test_string), jsonlogic)
    
+   def test_4(self):
+      test_string = "1"
+      self.assertEqual(get_jsonlogic(test_string), "@1")
+   
    def test_imbalanced_parens_1(self):
       test_string = "(1 AND (2 OR 3)"
       with self.assertRaises(ValueError):
@@ -123,6 +127,7 @@ class TestLogicStringValidation(TestCase):
          ["((1 AND 2) OR 3", 3, False],
          ["1 AND (2 OR 3))", 3, False],
          ["((1 OR 2) AND 3 OR ((4 AND 1) OR (5 AND NOT (1 OR 6)))", 6, False],
+         ["1", 1, True]
       ]
 
    def test_has_valid_tokens_true_1(self):

@@ -2,8 +2,7 @@ import copy, re
 
 from django.db import models
 
-from .logic import get_jsonlogic
-
+from .logic import get_jsonlogic, jsonlogic_has_single_condition
 '''
 Setup: One context_type per variable available to the rules. 
 Property and Operator and Action dictionaries will be laid out like so:
@@ -90,12 +89,18 @@ class Rule(models.Model):
 
         elif type(jsonlogic) == list:
             for index, symbol in enumerate(jsonlogic):
-                condition_number_match = re.match(r"^@(\d)+$", symbol)
-                if not condition_number_match:
-                    raise ValueError(symbol,' in ',jsonlogic,': improper condition argument')
-                # match.group(1) has the first sub-group, in this case the digit extraction
-                num = condition_number_match.group(1)
-                jsonlogic[index] = self.condition_set.get(rule_index=num).jsonlogic_condition
+                if type(symbol) == str:
+                    condition_number_match = re.match(r"^@(\d)+$", symbol)
+                    if not condition_number_match:
+                        raise ValueError(symbol,' in ',jsonlogic,': improper condition argument')
+                    # match.group(1) has the first sub-group, in this case the digit extraction
+                    num = condition_number_match.group(1)
+                    jsonlogic[index] = self.condition_set.get(rule_index=num).jsonlogic_condition
+                else: # dict
+                    jsonlogic[index] = self.replace_jsonlogic_symbols_recur(symbol)
+        
+        elif jsonlogic_has_single_condition(jsonlogic):
+            jsonlogic = self.condition_set.get(rule_index=1).jsonlogic_condition
 
         return jsonlogic
 

@@ -75,6 +75,10 @@ def pop_stack_iter(stack, logic_list, operand_target, operand_counter):
     return logic_list
 
 def get_jsonlogic(logic_string:str):
+
+    if is_only_one_condition_in_logic_string(logic_string):
+        return get_single_condition_placeholder_string()
+    
     logic_list = []
     stack = get_shunting_yard_stack(logic_string)
     if peek(stack) is not None:
@@ -86,6 +90,15 @@ def get_jsonlogic(logic_string:str):
         return logic_list[0]
 
     return {} # Fallback empty value
+
+def is_only_one_condition_in_logic_string(logic_string):
+    return logic_string == "1"
+
+def get_single_condition_placeholder_string():
+    return "@1"
+
+def jsonlogic_has_single_condition(jsonlogic):
+    return jsonlogic == "@1"
 
 # --- --- --- --- Regular expression functions for checking validity of the logic string before jsonlogic processing begins --- --- --- ---
 

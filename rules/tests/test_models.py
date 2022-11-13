@@ -40,6 +40,7 @@ class TestRule(TestCase):
         set_up_properties_and_ops()
         set_up_rule_with_2_conditions("test_rule_1", "1 AND 2")
         set_up_rule_with_2_conditions("test_rule_2", "NOT (2 OR (1 AND NOT 2))")
+        set_up_rule_with_2_conditions("test_rule_3", "1")
 
     def test_jsonlogic_full_conditions_rule1(self):
         rule = Rule.objects.get(name="test_rule_1")
@@ -56,6 +57,44 @@ class TestRule(TestCase):
                     {"var" : "number_of_forks"}
                 ]}
             ]},
+        )
+    
+    def test_jsonlogic_full_conditions_rule2(self):
+        rule = Rule.objects.get(name="test_rule_2")
+        rule.set_jsonlogic_conditions()
+        self.assertEqual(
+            rule.jsonlogic_full_conditions,
+            { "!" : [
+                { "or" : [
+                    { "and" : [
+                        { "!" : [
+                            { "==" : [
+                                {"var" : "spoon_type"},
+                                "Big"
+                            ]}
+                        ]},
+                        { ">" : [
+                            {"var" : "number_of_spoons"},
+                            {"var" : "number_of_forks"}
+                        ]}
+                    ]},
+                    { "==" : [
+                        {"var" : "spoon_type"},
+                        "Big"
+                    ]}
+                ]}
+            ]}
+        )
+
+    def test_jsonlogic_full_conditions_rule3(self):
+        rule = Rule.objects.get(name="test_rule_3")
+        rule.set_jsonlogic_conditions()
+        self.assertEqual(
+            rule.jsonlogic_full_conditions,
+            { ">" : [
+                {"var" : "number_of_spoons"},
+                {"var" : "number_of_forks"}
+            ]}
         )
 
 def set_up_floating_conditions():
