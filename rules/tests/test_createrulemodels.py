@@ -5,7 +5,7 @@ from ..models import Property, Action, BoolOperator
 
 class TestCreateRuleModels(TestCase):
     
-    @override_settings(RULES_MODELS_SETUP_MODULES=["rules.tests.trafficlightrules"])
+    @override_settings(RULES_MODELS_SETUP_MODULES=["rules.tests._trafficlightrules"])
     def setUp(self):
         call_command('createrulemodels')
 
@@ -15,8 +15,12 @@ class TestCreateRuleModels(TestCase):
             "trafficlight_color"
         )
         self.assertEquals(
-            Property.objects.get(function_name="get_trafficlight_counter").context_type,
-            "trafficlight_counter"
+            type(Property.objects.get(function_name="freetext", context_type="trafficlight_color").pk),
+            int
+        )
+        self.assertEquals(
+            type(Property.objects.get(function_name="freetext", context_type="trafficlight_counter").pk),
+            int
         )
         self.assertEquals(
             sorted([boolop.jsonlogic_operator for boolop in BoolOperator.objects.filter(context_type="trafficlight_counter")]),

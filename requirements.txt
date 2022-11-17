@@ -1,3 +1,3 @@
 django
 regex
-json-logic
+json-logic-qubit

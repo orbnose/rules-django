@@ -48,12 +48,16 @@ class RuleManager():
         self.boolOperator_string_dict = boolOperator_string_dict
         self.context_types = context_types
         self.function_translations = {}
+        self.jsonlogic_property_data = {}
 
         self._validate_input_dictionaries()
         self._create_function_translations()
+        
+    def build_models(self):
         self._create_properties()
         self._create_actions()
         self._create_boolOperators()
+        self._create_freetext_properties()
 
     def _validate_input_dictionaries(self):
         self._validate_dictionary(self.property_function_dict, callable)
@@ -96,24 +100,52 @@ class RuleManager():
                 function_or_op_name = _get_string_name(function_or_op)
                 _create_model(modelClass, context_type_key, function_or_op_name)
 
+    def _create_freetext_properties(self):
+        for context_type in self.context_types:
+            try:
+                if "==" in self.boolOperator_string_dict[context_type] or "in" in self.boolOperator_string_dict[context_type]:
+                    _create_model(Property, context_type, "freetext", freetext=True)
+            except KeyError:
+                continue
+
     def eval_first_true_rule(self, *rule_names, **context_type_vars):
+
+        self._eval_jsonlogic_property_data(**context_type_vars)
+
         results_dict = {}
         for rule_name in rule_names:
-            if self.eval_rule(results_dict, rule_name, **context_type_vars):
+            if self._eval_rule(results_dict, rule_name, **context_type_vars):
                 return results_dict
         return results_dict
 
     def eval_all_rules(self, *rule_names, **context_type_vars):
+
+        self._eval_jsonlogic_property_data(**context_type_vars)
+
         results_dict = {}
         for rule_name in rule_names:
-            self.eval_rule(results_dict, rule_name, **context_type_vars)
+            self._eval_rule(results_dict, rule_name, **context_type_vars)
         return results_dict
 
-    def eval_rule(self, results_dict, rule_name, **context_type_vars):
+    def _eval_jsonlogic_property_data(self, **context_type_vars):
+        for property_function_str in self.function_translations:
+            try:
+                prop = Property.objects.get(function_name=property_function_str)
+            except Property.DoesNotExist:
+                continue
+            
+            property_function = self.function_translations[property_function_str]
+            context_var = context_type_vars[prop.context_type]
+            self.jsonlogic_property_data[property_function_str] = property_function(context_var)
+
+    def _eval_rule(self, results_dict, rule_name, **context_type_vars):
         rule = Rule.objects.get(name=rule_name)
         rule_action_pair = RuleActionPair.objects.get(rule=rule)
-        jsonlogic_if_statement = self._replace_func_names_with_func_results_recur(rule_action_pair.jsonlogic_if_statement, **context_type_vars)
-        result_action_str = jsonLogic(jsonlogic_if_statement)
+
+        result_action_str = jsonLogic(
+            rule_action_pair.jsonlogic_if_statement,
+            self.jsonlogic_property_data)
+
         if result_action_str == 'do_nothing':
             return False
             
@@ -125,29 +157,6 @@ class RuleManager():
         results_dict[context_type_str] = result
         return True
 
-    def _replace_func_names_with_func_results_recur(self, jsonlogic, **context_type_vars):
-        if type(jsonlogic) == dict:
-            # There should only be 1 key per logic string dictionary (one of 'and', 'or', '!').
-            key = list(jsonlogic.keys())[0]
-            value = list(jsonlogic.values())[0]
-
-            # replace/iterate
-            jsonlogic = { key : self._replace_func_names_with_func_results_recur(value) }
-        
-        elif type(jsonlogic) == list:
-            for index, entry in jsonlogic:
-                if type(entry) == str:
-                    property_model = Property.objects.get(function_name=entry)
-                    context_type_str = property_model.context_type
-                    context_var = context_type_vars[context_type_str]
-                    prop_function = self.function_translations[entry]
-                    property_result = prop_function(context_var)
-                    jsonlogic[index] = property_result
-                else: #dict
-                    jsonlogic[index] = self._replace_func_names_with_func_results_recur(entry)
-        
-        return jsonlogic
-
 def _isstr(input_obj):
         return type(input_obj) == str
 
@@ -156,7 +165,7 @@ def _get_string_name(function_or_string):
         return function_or_string
     return function_or_string.__name__
 
-def _create_model(modelClass, context_type_key, function_or_op_name):
+def _create_model(modelClass, context_type_key, function_or_op_name, freetext=False):
     if modelClass == Property:
         try:
             model = Property.objects.get(function_name = function_or_op_name, context_type=context_type_key)
@@ -164,7 +173,7 @@ def _create_model(modelClass, context_type_key, function_or_op_name):
         except Property.DoesNotExist:
             model = Property(
                 function_name = function_or_op_name,
-                is_free_text = False,
+                is_free_text = freetext,
                 context_type = context_type_key,
             )
     elif modelClass == Action:

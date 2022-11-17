@@ -8,8 +8,8 @@ class Trafficlight():
 def get_trafficlight_color(color: str):
     return color
 
-def get_trafficlight_counter(tl: Trafficlight):
-    return tl.counter
+def get_trafficlight_counter(counter: int):
+    return counter
 
 def set_color_to_green(tl: Trafficlight):
     tl.color = 'green'
