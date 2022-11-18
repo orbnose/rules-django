@@ -24,7 +24,7 @@ class TestCreateRuleModels(TestCase):
         )
         self.assertEquals(
             sorted([boolop.jsonlogic_operator for boolop in BoolOperator.objects.filter(context_type="trafficlight_counter")]),
-            sorted(["==",">"])
+            sorted(["==",">","<"])
         )
         self.assertEquals(
             BoolOperator.objects.get(context_type="trafficlight_color").jsonlogic_operator,

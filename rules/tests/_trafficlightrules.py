@@ -38,7 +38,7 @@ _tl_property_functions = {
 }
 _tl_boolops = {
     "trafficlight_color" : ["=="],
-    "trafficlight_counter" : ["==", ">"]
+    "trafficlight_counter" : ["==", ">", "<"]
 }
 _tl_action_functions = {
     "trafficlight": [set_color_to_green, set_color_to_yellow, set_color_to_red, increment_counter, reset_counter]
